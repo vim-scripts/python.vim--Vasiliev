@@ -2,31 +2,38 @@
 " Language:	Python
 " Maintainer:	Dmitry Vasiliev <dima@hlabs.spb.ru>
 " URL:		http://www.hlabs.spb.ru/vim/python.vim
-" Last Change:	$Date: 2003/10/13 07:33:29 $
+" Last Change:	$Date: 2003/10/17 12:23:46 $
 " Filenames:	*.py
-" $Revision: 1.17 $
+" $Revision: 1.19 $
 "
 " Based on python.vim (from Vim 6.1 distribution)
 " by Neil Schemenauer <nas@python.ca>
 "
+
+"
 " Options:
-" For highlighted builtin functions:
 "
-"    let python_highlight_builtins = 1
+"    For set option do: let OPTION_NAME = 1
+"    For clear option do: let OPTION_NAME = 0
 "
-" For highlighted standard exceptions:
+" Option names:
 "
-"    let python_highlight_exceptions = 1
+"    For highlighted builtin functions:
+"       python_highlight_builtins
 "
-" For highlighted string formatting:
+"    For highlighted standard exceptions:
+"       python_highlight_exceptions
 "
-"    let python_highlight_string_formatting = 1
+"    For highlighted string formatting:
+"       python_highlight_string_formatting
 "
-" If you want all possible Python highlighting:
+"    For highlighted indentation errors:
+"       python_highlight_indent_errors
 "
-"    let python_highlight_all = 1
+"    If you want all possible Python highlighting:
+"    (This option not override previously set options)
+"       python_highlight_all
 "
-" TODO: Check more errors?
 
 " For version 5.x: Clear all syntax items
 " For version 6.x: Quit when a syntax file was already loaded
@@ -36,10 +43,20 @@ elseif exists("b:current_syntax")
   finish
 endif
 
-if exists("python_highlight_all")
-  let python_highlight_builtins = 1
-  let python_highlight_exceptions = 1
-  let python_highlight_string_formatting = 1
+if exists("python_highlight_all") && python_highlight_all != 0
+  " Not override previously set options
+  if !exists("python_highlight_builtins")
+    let python_highlight_builtins = 1
+  endif
+  if !exists("python_highlight_exceptions")
+    let python_highlight_exceptions = 1
+  endif
+  if !exists("python_highlight_string_formatting")
+    let python_highlight_string_formatting = 1
+  endif
+  if !exists("python_highlight_indent_errors")
+    let python_highlight_indent_errors = 1
+  endif
 endif
 
 " Keywords
@@ -64,8 +81,13 @@ syn keyword pythonTodo		TODO FIXME XXX contained
 
 " Erroneous characters that cannont be in a python program
 syn match pythonError		"[@$?]" display
-" Mixing spaces and tabs is bad
-syn match pythonIndentError	"^\s*\(\t \| \t\)\s*" display
+
+" Mixing spaces and tabs also may be used for pretty formatting multiline
+" statements. For now I don't know how to work around this.
+if exists("python_highlight_indent_errors") && python_highlight_indent_errors != 0
+  " Mixing spaces and tabs is bad (but not always...)
+  syn match pythonIndentError	"^\s*\(\t \| \t\)\s*" display
+endif
 
 " Strings
 syn region pythonString		start=+'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ contains=pythonEscape,pythonEscapeError
@@ -111,7 +133,7 @@ syn region pythonUniRawString	start=+[uU][rR]'''+ end=+'''+ contains=pythonUniRa
 syn match  pythonUniRawEscape		"\([^\\]\(\\\\\)*\)\@<=\\u\x\{4}" display contained
 syn match  pythonUniRawEscapeError	"\([^\\]\(\\\\\)*\)\@<=\\u\x\{,3}\X" display contained
 
-if exists("python_highlight_string_formatting")
+if exists("python_highlight_string_formatting") && python_highlight_string_formatting != 0
   " String formatting
   syn match pythonStrFormat	"%\(([^)]\+)\)\=[-#0 +]\=\d*\(\.\d\+\)\=[hlL]\=[diouxXeEfFgGcrs%]" contained containedin=pythonString,pythonUniString,pythonRawString
   syn match pythonStrFormat	"%[-#0 +]\=\(\*\|\d\+\)\=\(\.\(\*\|\d\+\)\)\=[hlL]\=[diouxXeEfFgGcrs%]" contained containedin=pythonString,pythonUniString,pythonRawString
@@ -125,7 +147,7 @@ syn match   pythonFloat		"\<\d\+[eE][+-]\=\d\+[jJ]\=\>" display
 syn match   pythonFloat		"\<\d\+\.\d*\([eE][+-]\=\d\+\)\=[jJ]\=" display
 syn match   pythonOctalError	"\<0\o*[89]\d*[lLjJ]\=\>" display
 
-if exists("python_highlight_builtins")
+if exists("python_highlight_builtins") && python_highlight_builtins != 0
   " Builtin functions, types and objects, not really part of the syntax
   syn keyword pythonBuiltinObj	True False Ellipsis None NotImplemented
 
@@ -142,7 +164,7 @@ if exists("python_highlight_builtins")
   syn keyword pythonBuiltinFunc	type unichr unicode vars xrange zip
 endif
 
-if exists("python_highlight_exceptions")
+if exists("python_highlight_exceptions") && python_highlight_exceptions != 0
   " Builtin exceptions and warnings
   syn keyword pythonExClass	Exception StandardError ArithmeticError
   syn keyword pythonExClass	LookupError EnvironmentError
@@ -210,7 +232,7 @@ if version >= 508 || !exists("did_python_syn_inits")
   HiLink pythonUniRawEscape		Special
   HiLink pythonUniRawEscapeError	Error
 
-  if exists("python_highlight_string_formatting")
+  if exists("python_highlight_string_formatting") && python_highlight_string_formatting != 0
     HiLink pythonStrFormat	Special
   endif
 
@@ -218,12 +240,12 @@ if version >= 508 || !exists("did_python_syn_inits")
   HiLink pythonFloat		Float
   HiLink pythonOctalError	Error
 
-  if exists("python_highlight_builtins")
+  if exists("python_highlight_builtins") && python_highlight_builtins != 0
     HiLink pythonBuiltinObj	Structure
     HiLink pythonBuiltinFunc	Function
   endif
 
-  if exists("python_highlight_exceptions")
+  if exists("python_highlight_exceptions") && python_highlight_exceptions != 0
     HiLink pythonExClass	Structure
   endif
 
