@@ -2,9 +2,10 @@
 " Language:	Python
 " Maintainer:	Dmitry Vasiliev <dima@hlabs.spb.ru>
 " URL:		http://www.hlabs.spb.ru/vim/python.vim
-" Last Change:	$Date: 2003/10/17 12:23:46 $
+" Last Change:	$Date: 2004-03-17 13:34:04 +0000 (Wed, 17 Mar 2004) $
 " Filenames:	*.py
-" $Revision: 1.19 $
+" Version:	2.4.1
+" $Rev: 72 $
 "
 " Based on python.vim (from Vim 6.1 distribution)
 " by Neil Schemenauer <nas@python.ca>
@@ -30,9 +31,15 @@
 "    For highlighted indentation errors:
 "       python_highlight_indent_errors
 "
+"    For highlighted doc-tests:
+"       python_highlight_doctests
+"
 "    If you want all possible Python highlighting:
 "    (This option not override previously set options)
 "       python_highlight_all
+"
+"    For fast machines:
+"       python_slow_sync
 "
 
 " For version 5.x: Clear all syntax items
@@ -57,6 +64,9 @@ if exists("python_highlight_all") && python_highlight_all != 0
   if !exists("python_highlight_indent_errors")
     let python_highlight_indent_errors = 1
   endif
+  if !exists("python_highlight_doctests")
+    let python_highlight_doctests = 1
+  endif
 endif
 
 " Keywords
@@ -74,26 +84,27 @@ syn keyword pythonException	try except finally
 syn keyword pythonOperator	and in is not or
 
 " Comments
-syn match   pythonComment	"#.*$" display contains=pythonTodo,pythonCoding,pythonRun
-syn match   pythonRun		"\%^#!.*$" contained
-syn match   pythonCoding	"\%^.*\(\n.*\)\?#.*coding[:=]\s*[0-9A-Za-z-_.]\+.*$" contained
+syn match   pythonComment	"#.*$" display contains=pythonTodo
+syn match   pythonRun		"\%^#!.*$"
+syn match   pythonCoding	"\%^.*\(\n.*\)\?#.*coding[:=]\s*[0-9A-Za-z-_.]\+.*$"
 syn keyword pythonTodo		TODO FIXME XXX contained
 
-" Erroneous characters that cannont be in a python program
+" Erroneous characters that cannot be in a python program
 syn match pythonError		"[@$?]" display
 
 " Mixing spaces and tabs also may be used for pretty formatting multiline
 " statements. For now I don't know how to work around this.
 if exists("python_highlight_indent_errors") && python_highlight_indent_errors != 0
   " Mixing spaces and tabs is bad (but not always...)
-  syn match pythonIndentError	"^\s*\(\t \| \t\)\s*" display
+  " TODO: String continuation should start only from ' or "...
+  syn match pythonIndentError	"\([^,"' \t]\s*\|[^\\,"' \t]\)\(\n\s*\)\+\(\t \| \t\)\s*\S"hs=e-1
 endif
 
 " Strings
-syn region pythonString		start=+'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ contains=pythonEscape,pythonEscapeError
-syn region pythonString		start=+"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ contains=pythonEscape,pythonEscapeError
-syn region pythonString		start=+"""+ end=+"""+ contains=pythonEscape,pythonEscapeError
-syn region pythonString		start=+'''+ end=+'''+ contains=pythonEscape,pythonEscapeError
+syn region pythonString		start=+'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonEscape,pythonEscapeError
+syn region pythonString		start=+"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonEscape,pythonEscapeError
+syn region pythonString		start=+"""+ end=+"""+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest2
+syn region pythonString		start=+'''+ end=+'''+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest
 
 syn match  pythonEscape		+\\[abfnrtv'"\\]+ display contained
 syn match  pythonEscapeError	+\\[^abfnrtv'"\\]+ display contained
@@ -104,10 +115,10 @@ syn match  pythonEscapeError	"\\x\x\=\X" display contained
 syn match  pythonEscape		"\\$"
 
 " Unicode strings
-syn region pythonUniString	start=+[uU]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
-syn region pythonUniString	start=+[uU]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
-syn region pythonUniString	start=+[uU]"""+ end=+"""+ contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
-syn region pythonUniString	start=+[uU]'''+ end=+'''+ contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
+syn region pythonUniString	start=+[uU]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
+syn region pythonUniString	start=+[uU]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
+syn region pythonUniString	start=+[uU]"""+ end=+"""+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError,pythonDocTest2
+syn region pythonUniString	start=+[uU]'''+ end=+'''+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError,pythonDocTest
 
 syn match  pythonUniEscape	"\\u\x\{4}" display contained
 syn match  pythonUniEscapeError	"\\u\x\{,3}\X" display contained
@@ -117,26 +128,32 @@ syn match  pythonUniEscape	"\\N{[A-Z ]\+}" display contained
 syn match  pythonUniEscapeError	"\\N{[^A-Z ]\+}" display contained
 
 " Raw strings
-syn region pythonRawString	start=+[rR]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ contains=pythonRawEscape
-syn region pythonRawString	start=+[rR]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ contains=pythonRawEscape
-syn region pythonRawString	start=+[rR]"""+ end=+"""+
-syn region pythonRawString	start=+[rR]'''+ end=+'''+
+syn region pythonRawString	start=+[rR]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonRawEscape
+syn region pythonRawString	start=+[rR]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonRawEscape
+syn region pythonRawString	start=+[rR]"""+ end=+"""+ keepend contains=pythonDocTest2
+syn region pythonRawString	start=+[rR]'''+ end=+'''+ keepend contains=pythonDocTest
 
 syn match pythonRawEscape	+\\['"]+ display transparent contained
 
 " Unicode raw strings
-syn region pythonUniRawString	start=+[uU][rR]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ contains=pythonRawEscape,pythonUniRawEscape,pythonUniRawEscapeError
-syn region pythonUniRawString	start=+[uU][rR]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ contains=pythonRawEscape,pythonUniRawEscape,pythonUniRawEscapeError
-syn region pythonUniRawString	start=+[uU][rR]"""+ end=+"""+ contains=pythonUniRawEscape,pythonUniRawEscapeError
-syn region pythonUniRawString	start=+[uU][rR]'''+ end=+'''+ contains=pythonUniRawEscape,pythonUniRawEscapeError
+syn region pythonUniRawString	start=+[uU][rR]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonRawEscape,pythonUniRawEscape,pythonUniRawEscapeError
+syn region pythonUniRawString	start=+[uU][rR]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonRawEscape,pythonUniRawEscape,pythonUniRawEscapeError
+syn region pythonUniRawString	start=+[uU][rR]"""+ end=+"""+ keepend contains=pythonUniRawEscape,pythonUniRawEscapeError,pythonDocTest2
+syn region pythonUniRawString	start=+[uU][rR]'''+ end=+'''+ keepend contains=pythonUniRawEscape,pythonUniRawEscapeError,pythonDocTest
 
 syn match  pythonUniRawEscape		"\([^\\]\(\\\\\)*\)\@<=\\u\x\{4}" display contained
 syn match  pythonUniRawEscapeError	"\([^\\]\(\\\\\)*\)\@<=\\u\x\{,3}\X" display contained
 
 if exists("python_highlight_string_formatting") && python_highlight_string_formatting != 0
   " String formatting
-  syn match pythonStrFormat	"%\(([^)]\+)\)\=[-#0 +]\=\d*\(\.\d\+\)\=[hlL]\=[diouxXeEfFgGcrs%]" contained containedin=pythonString,pythonUniString,pythonRawString
-  syn match pythonStrFormat	"%[-#0 +]\=\(\*\|\d\+\)\=\(\.\(\*\|\d\+\)\)\=[hlL]\=[diouxXeEfFgGcrs%]" contained containedin=pythonString,pythonUniString,pythonRawString
+  syn match pythonStrFormat	"%\(([^)]\+)\)\=[-#0 +]*\d*\(\.\d\+\)\=[hlL]\=[diouxXeEfFgGcrs%]" contained containedin=pythonString,pythonUniString,pythonRawString
+  syn match pythonStrFormat	"%[-#0 +]*\(\*\|\d\+\)\=\(\.\(\*\|\d\+\)\)\=[hlL]\=[diouxXeEfFgGcrs%]" contained containedin=pythonString,pythonUniString,pythonRawString
+endif
+
+if exists("python_highlight_doctests") && python_highlight_doctests != 0
+  " DocTests
+  syn region pythonDocTest	start="^\s*>>>" end=+'''+he=s-1 end="^\s*$" contained
+  syn region pythonDocTest2	start="^\s*>>>" end=+"""+he=s-1 end="^\s*$" contained
 endif
 
 " Numbers (ints, longs, floats, complex)
@@ -155,12 +172,14 @@ if exists("python_highlight_builtins") && python_highlight_builtins != 0
   syn keyword pythonBuiltinFunc	basestring bool buffer callable
   syn keyword pythonBuiltinFunc	chr classmethod cmp coerce compile complex
   syn keyword pythonBuiltinFunc	delattr dict dir divmod enumerate eval
-  syn keyword pythonBuiltinFunc	execfile file filter float getattr globals
-  syn keyword pythonBuiltinFunc	hasattr hash hex id input int intern isinstance
+  syn keyword pythonBuiltinFunc	execfile file filter float frozenset getattr
+  syn keyword pythonBuiltinfunc globals hasattr hash help hex id 
+  syn keyword pythonBuiltinFunc	input int intern isinstance
   syn keyword pythonBuiltinFunc	issubclass iter len list locals long map max
   syn keyword pythonBuiltinFunc	min object oct open ord pow property range
-  syn keyword pythonBuiltinFunc	raw_input reduce reload repr round setattr
-  syn keyword pythonBuiltinFunc	slice staticmethod str sum super tuple
+  syn keyword pythonBuiltinFunc	raw_input reduce reload repr
+  syn keyword pythonBuiltinFunc reversed round set setattr
+  syn keyword pythonBuiltinFunc	slice sorted staticmethod str sum super tuple
   syn keyword pythonBuiltinFunc	type unichr unicode vars xrange zip
 endif
 
@@ -187,14 +206,15 @@ if exists("python_highlight_exceptions") && python_highlight_exceptions != 0
   syn keyword pythonExClass	RuntimeWarning FutureWarning
 endif
 
-" This is fast but code inside triple quoted strings screws it up. It
-" is impossible to fix because the only way to know if you are inside a
-" triple quoted string is to start from the beginning of the file. If
-" you have a fast machine you can try uncommenting the "sync minlines"
-" and commenting out the rest.
-syn sync match pythonSync grouphere NONE "):$"
-syn sync maxlines=200
-"syn sync minlines=2000
+if exists("python_slow_sync") && python_slow_sync != 0
+  syn sync minlines=2000
+else
+  " This is fast but code inside triple quoted strings screws it up. It
+  " is impossible to fix because the only way to know if you are inside a
+  " triple quoted string is to start from the beginning of the file.
+  syn sync match pythonSync grouphere NONE "):$"
+  syn sync maxlines=200
+endif
 
 if version >= 508 || !exists("did_python_syn_inits")
   if version <= 508
@@ -218,7 +238,9 @@ if version >= 508 || !exists("did_python_syn_inits")
   HiLink pythonTodo		Todo
 
   HiLink pythonError		Error
-  HiLink pythonIndentError	Error
+  if exists("python_highlight_indent_errors") && python_highlight_indent_errors != 0
+    HiLink pythonIndentError	Error
+  endif
 
   HiLink pythonString		String
   HiLink pythonUniString	String
@@ -234,6 +256,11 @@ if version >= 508 || !exists("did_python_syn_inits")
 
   if exists("python_highlight_string_formatting") && python_highlight_string_formatting != 0
     HiLink pythonStrFormat	Special
+  endif
+
+  if exists("python_highlight_doctests") && python_highlight_doctests != 0
+    HiLink pythonDocTest	Special
+    HiLink pythonDocTest2	Special
   endif
 
   HiLink pythonNumber		Number
