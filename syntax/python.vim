@@ -2,10 +2,10 @@
 " Language:	Python
 " Maintainer:	Dmitry Vasiliev <dima@hlabs.spb.ru>
 " URL:		http://www.hlabs.spb.ru/vim/python.vim
-" Last Change:	$Date: 2004-08-05 07:40:19 +0000 (Thu, 05 Aug 2004) $
+" Last Change:	$Date: 2005-03-13 14:40:51 +0300 (Вс, 13 мар 2005) $
 " Filenames:	*.py
-" Version:	2.4.2
-" $Rev: 87 $
+" Version:	2.5.1
+" $Rev: 137 $
 "
 " Based on python.vim (from Vim 6.1 distribution)
 " by Neil Schemenauer <nas@python.ca>
@@ -171,7 +171,7 @@ if exists("python_highlight_builtins") && python_highlight_builtins != 0
   " Builtin functions, types and objects, not really part of the syntax
   syn keyword pythonBuiltinObj	True False Ellipsis None NotImplemented
 
-  syn keyword pythonBuiltinFunc	__import__ abs apply
+  syn keyword pythonBuiltinFunc	__import__ abs all any apply
   syn keyword pythonBuiltinFunc	basestring bool buffer callable
   syn keyword pythonBuiltinFunc	chr classmethod cmp coerce compile complex
   syn keyword pythonBuiltinFunc	delattr dict dir divmod enumerate eval
