@@ -2,10 +2,10 @@
 " Language:	Python
 " Maintainer:	Dmitry Vasiliev <dima@hlabs.spb.ru>
 " URL:		http://www.hlabs.spb.ru/vim/python.vim
-" Last Change:	$Date: 2004-03-17 13:34:04 +0000 (Wed, 17 Mar 2004) $
+" Last Change:	$Date: 2004-08-05 07:40:19 +0000 (Thu, 05 Aug 2004) $
 " Filenames:	*.py
-" Version:	2.4.1
-" $Rev: 72 $
+" Version:	2.4.2
+" $Rev: 87 $
 "
 " Based on python.vim (from Vim 6.1 distribution)
 " by Neil Schemenauer <nas@python.ca>
@@ -76,12 +76,15 @@ syn keyword pythonStatement	pass print raise
 syn keyword pythonStatement	global assert
 syn keyword pythonStatement	lambda yield
 syn keyword pythonStatement	def class nextgroup=pythonFunction skipwhite
-syn match   pythonFunction	"\h\w*" contained
+syn match   pythonFunction	"\h\w*" display contained
 syn keyword pythonRepeat	for while
 syn keyword pythonConditional	if elif else
 syn keyword pythonImport	import from as
 syn keyword pythonException	try except finally
 syn keyword pythonOperator	and in is not or
+
+" Decorators (new in Python 2.4)
+syn match   pythonDecorator	"@" display nextgroup=pythonFunction skipwhite
 
 " Comments
 syn match   pythonComment	"#.*$" display contains=pythonTodo
@@ -90,7 +93,7 @@ syn match   pythonCoding	"\%^.*\(\n.*\)\?#.*coding[:=]\s*[0-9A-Za-z-_.]\+.*$"
 syn keyword pythonTodo		TODO FIXME XXX contained
 
 " Erroneous characters that cannot be in a python program
-syn match pythonError		"[@$?]" display
+syn match pythonError		"[$?]" display
 
 " Mixing spaces and tabs also may be used for pretty formatting multiline
 " statements. For now I don't know how to work around this.
@@ -231,6 +234,8 @@ if version >= 508 || !exists("did_python_syn_inits")
   HiLink pythonRepeat		Repeat
   HiLink pythonException	Exception
   HiLink pythonOperator		Operator
+
+  HiLink pythonDecorator	Define
 
   HiLink pythonComment		Comment
   HiLink pythonCoding		Special
