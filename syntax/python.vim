@@ -2,10 +2,10 @@
 " Language:	Python
 " Maintainer:	Dmitry Vasiliev <dima@hlabs.spb.ru>
 " URL:		http://www.hlabs.spb.ru/vim/python.vim
-" Last Change:	$Date: 2005-03-13 14:40:51 +0300 (Вс, 13 мар 2005) $
+" Last Change:	$Date: 2006-01-23 12:26:59 +0300 (Пнд, 23 Янв 2006) $
 " Filenames:	*.py
-" Version:	2.5.1
-" $Rev: 137 $
+" Version:	2.5.2
+" $Rev: 306 $
 "
 " Based on python.vim (from Vim 6.1 distribution)
 " by Neil Schemenauer <nas@python.ca>
@@ -19,19 +19,22 @@
 "
 " Option names:
 "
-"    For highlighted builtin functions:
+"    For highlight builtin functions:
 "       python_highlight_builtins
 "
-"    For highlighted standard exceptions:
+"    For highlight standard exceptions:
 "       python_highlight_exceptions
 "
-"    For highlighted string formatting:
+"    For highlight string formatting:
 "       python_highlight_string_formatting
 "
-"    For highlighted indentation errors:
+"    For highlight indentation errors:
 "       python_highlight_indent_errors
 "
-"    For highlighted doc-tests:
+"    For highlight trailing spaces:
+"       python_highlight_space_errors
+"
+"    For highlight doc-tests:
 "       python_highlight_doctests
 "
 "    If you want all possible Python highlighting:
@@ -64,6 +67,9 @@ if exists("python_highlight_all") && python_highlight_all != 0
   if !exists("python_highlight_indent_errors")
     let python_highlight_indent_errors = 1
   endif
+  if !exists("python_highlight_space_errors")
+    let python_highlight_space_errors = 1
+  endif
   if !exists("python_highlight_doctests")
     let python_highlight_doctests = 1
   endif
@@ -92,25 +98,28 @@ syn match   pythonRun		"\%^#!.*$"
 syn match   pythonCoding	"\%^.*\(\n.*\)\?#.*coding[:=]\s*[0-9A-Za-z-_.]\+.*$"
 syn keyword pythonTodo		TODO FIXME XXX contained
 
-" Erroneous characters that cannot be in a python program
+" Errors
+syn match pythonError		"\<\d\+\D\+\>" display
 syn match pythonError		"[$?]" display
 
-" Mixing spaces and tabs also may be used for pretty formatting multiline
+" TODO: Mixing spaces and tabs also may be used for pretty formatting multiline
 " statements. For now I don't know how to work around this.
 if exists("python_highlight_indent_errors") && python_highlight_indent_errors != 0
-  " Mixing spaces and tabs is bad (but not always...)
-  " TODO: String continuation should start only from ' or "...
-  syn match pythonIndentError	"\([^,"' \t]\s*\|[^\\,"' \t]\)\(\n\s*\)\+\(\t \| \t\)\s*\S"hs=e-1
+  syn match pythonIndentError	"^\s*\( \t\|\t \)\s*\S"me=e-1 display
+endif
+
+" Trailing space errors
+if exists("python_highlight_space_errors") && python_highlight_space_errors != 0
+  syn match pythonSpaceError	"\s\+$" display
 endif
 
 " Strings
 syn region pythonString		start=+'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonEscape,pythonEscapeError
 syn region pythonString		start=+"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonEscape,pythonEscapeError
-syn region pythonString		start=+"""+ end=+"""+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest2
-syn region pythonString		start=+'''+ end=+'''+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest
+syn region pythonString		start=+"""+ end=+"""+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest2,pythonSpaceError
+syn region pythonString		start=+'''+ end=+'''+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest,pythonSpaceError
 
 syn match  pythonEscape		+\\[abfnrtv'"\\]+ display contained
-syn match  pythonEscapeError	+\\[^abfnrtv'"\\]+ display contained
 syn match  pythonEscape		"\\\o\o\=\o\=" display contained
 syn match  pythonEscapeError	"\\\o\{,2}[89]" display contained
 syn match  pythonEscape		"\\x\x\{2}" display contained
@@ -120,8 +129,8 @@ syn match  pythonEscape		"\\$"
 " Unicode strings
 syn region pythonUniString	start=+[uU]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
 syn region pythonUniString	start=+[uU]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError
-syn region pythonUniString	start=+[uU]"""+ end=+"""+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError,pythonDocTest2
-syn region pythonUniString	start=+[uU]'''+ end=+'''+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError,pythonDocTest
+syn region pythonUniString	start=+[uU]"""+ end=+"""+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError,pythonDocTest2,pythonSpaceError
+syn region pythonUniString	start=+[uU]'''+ end=+'''+ keepend contains=pythonEscape,pythonUniEscape,pythonEscapeError,pythonUniEscapeError,pythonDocTest,pythonSpaceError
 
 syn match  pythonUniEscape	"\\u\x\{4}" display contained
 syn match  pythonUniEscapeError	"\\u\x\{,3}\X" display contained
@@ -133,16 +142,16 @@ syn match  pythonUniEscapeError	"\\N{[^A-Z ]\+}" display contained
 " Raw strings
 syn region pythonRawString	start=+[rR]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonRawEscape
 syn region pythonRawString	start=+[rR]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonRawEscape
-syn region pythonRawString	start=+[rR]"""+ end=+"""+ keepend contains=pythonDocTest2
-syn region pythonRawString	start=+[rR]'''+ end=+'''+ keepend contains=pythonDocTest
+syn region pythonRawString	start=+[rR]"""+ end=+"""+ keepend contains=pythonDocTest2,pythonSpaceError
+syn region pythonRawString	start=+[rR]'''+ end=+'''+ keepend contains=pythonDocTest,pythonSpaceError
 
 syn match pythonRawEscape	+\\['"]+ display transparent contained
 
 " Unicode raw strings
 syn region pythonUniRawString	start=+[uU][rR]'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonRawEscape,pythonUniRawEscape,pythonUniRawEscapeError
 syn region pythonUniRawString	start=+[uU][rR]"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonRawEscape,pythonUniRawEscape,pythonUniRawEscapeError
-syn region pythonUniRawString	start=+[uU][rR]"""+ end=+"""+ keepend contains=pythonUniRawEscape,pythonUniRawEscapeError,pythonDocTest2
-syn region pythonUniRawString	start=+[uU][rR]'''+ end=+'''+ keepend contains=pythonUniRawEscape,pythonUniRawEscapeError,pythonDocTest
+syn region pythonUniRawString	start=+[uU][rR]"""+ end=+"""+ keepend contains=pythonUniRawEscape,pythonUniRawEscapeError,pythonDocTest2,pythonSpaceError
+syn region pythonUniRawString	start=+[uU][rR]'''+ end=+'''+ keepend contains=pythonUniRawEscape,pythonUniRawEscapeError,pythonDocTest,pythonSpaceError
 
 syn match  pythonUniRawEscape		"\([^\\]\(\\\\\)*\)\@<=\\u\x\{4}" display contained
 syn match  pythonUniRawEscapeError	"\([^\\]\(\\\\\)*\)\@<=\\u\x\{,3}\X" display contained
@@ -160,15 +169,18 @@ if exists("python_highlight_doctests") && python_highlight_doctests != 0
 endif
 
 " Numbers (ints, longs, floats, complex)
-syn match   pythonNumber	"\<0[xX]\x\+[lL]\=\>" display
+syn match   pythonHexNumber	"\<0[xX]\x\+[lL]\=\>" display
+syn match   pythonHexNumber	"\<0[xX]\>" display
 syn match   pythonNumber	"\<\d\+[lLjJ]\=\>" display
 syn match   pythonFloat		"\.\d\+\([eE][+-]\=\d\+\)\=[jJ]\=\>" display
 syn match   pythonFloat		"\<\d\+[eE][+-]\=\d\+[jJ]\=\>" display
 syn match   pythonFloat		"\<\d\+\.\d*\([eE][+-]\=\d\+\)\=[jJ]\=" display
-syn match   pythonOctalError	"\<0\o*[89]\d*[lLjJ]\=\>" display
+
+syn match   pythonOctalError	"\<0\o*[89]\d*[lL]\=\>" display
+syn match   pythonHexError	"\<0[xX]\X\+[lL]\=\>" display
 
 if exists("python_highlight_builtins") && python_highlight_builtins != 0
-  " Builtin functions, types and objects, not really part of the syntax
+  " Builtin functions, types and objects
   syn keyword pythonBuiltinObj	True False Ellipsis None NotImplemented
 
   syn keyword pythonBuiltinFunc	__import__ abs all any apply
@@ -243,9 +255,8 @@ if version >= 508 || !exists("did_python_syn_inits")
   HiLink pythonTodo		Todo
 
   HiLink pythonError		Error
-  if exists("python_highlight_indent_errors") && python_highlight_indent_errors != 0
-    HiLink pythonIndentError	Error
-  endif
+  HiLink pythonIndentError	Error
+  HiLink pythonSpaceError	Error
 
   HiLink pythonString		String
   HiLink pythonUniString	String
@@ -259,27 +270,21 @@ if version >= 508 || !exists("did_python_syn_inits")
   HiLink pythonUniRawEscape		Special
   HiLink pythonUniRawEscapeError	Error
 
-  if exists("python_highlight_string_formatting") && python_highlight_string_formatting != 0
-    HiLink pythonStrFormat	Special
-  endif
+  HiLink pythonStrFormat	Special
 
-  if exists("python_highlight_doctests") && python_highlight_doctests != 0
-    HiLink pythonDocTest	Special
-    HiLink pythonDocTest2	Special
-  endif
+  HiLink pythonDocTest		Special
+  HiLink pythonDocTest2		Special
 
   HiLink pythonNumber		Number
+  HiLink pythonHexNumber	Number
   HiLink pythonFloat		Float
   HiLink pythonOctalError	Error
+  HiLink pythonHexError		Error
 
-  if exists("python_highlight_builtins") && python_highlight_builtins != 0
-    HiLink pythonBuiltinObj	Structure
-    HiLink pythonBuiltinFunc	Function
-  endif
+  HiLink pythonBuiltinObj	Structure
+  HiLink pythonBuiltinFunc	Function
 
-  if exists("python_highlight_exceptions") && python_highlight_exceptions != 0
-    HiLink pythonExClass	Structure
-  endif
+  HiLink pythonExClass	Structure
 
   delcommand HiLink
 endif
