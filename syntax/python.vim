@@ -2,9 +2,9 @@
 " Language:	Python
 " Maintainer:	Dmitry Vasiliev <dima@hlabs.spb.ru>
 " URL:		http://www.hlabs.spb.ru/vim/python.vim
-" Last Change:	2008-09-21
+" Last Change:	2008-09-22
 " Filenames:	*.py
-" Version:	2.6.1
+" Version:	2.6.2
 "
 " Based on python.vim (from Vim 6.1 distribution)
 " by Neil Schemenauer <nas@python.ca>
@@ -143,10 +143,10 @@ if exists("python_highlight_space_errors") && python_highlight_space_errors != 0
 endif
 
 " Strings
-syn region pythonString		start=+'+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonEscape,pythonEscapeError,@Spell
-syn region pythonString		start=+"+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonEscape,pythonEscapeError,@Spell
-syn region pythonString		start=+"""+ end=+"""+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest2,pythonSpaceError,@Spell
-syn region pythonString		start=+'''+ end=+'''+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest,pythonSpaceError,@Spell
+syn region pythonString		start=+[bB]\='+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonEscape,pythonEscapeError,@Spell
+syn region pythonString		start=+[bB]\="+ skip=+\\\\\|\\"\|\\$+ excludenl end=+"+ end=+$+ keepend contains=pythonEscape,pythonEscapeError,@Spell
+syn region pythonString		start=+[bB]\="""+ end=+"""+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest2,pythonSpaceError,@Spell
+syn region pythonString		start=+[bB]\='''+ end=+'''+ keepend contains=pythonEscape,pythonEscapeError,pythonDocTest,pythonSpaceError,@Spell
 
 syn match  pythonEscape		+\\[abfnrtv'"\\]+ display contained
 syn match  pythonEscape		"\\\o\o\=\o\=" display contained
@@ -193,12 +193,15 @@ endif
 
 if exists("python_highlight_string_format") && python_highlight_string_format != 0
   " str.format syntax
+  syn match pythonStrFormat "{{\|}}" contained containedin=pythonString,pythonUniString,pythonRawString,pythonUniRawString
   syn match pythonStrFormat	"{\([a-zA-Z_][a-zA-Z0-9_]*\|\d\+\)\(\.[a-zA-Z_][a-zA-Z0-9_]*\|\[\(\d\+\|[^!:\}]\+\)\]\)*\(![rs]\)\=\(:\({\([a-zA-Z_][a-zA-Z0-9_]*\|\d\+\)}\|\([^}]\=[<>=^]\)\=[ +-]\=#\=0\=\d*\(\.\d\+\)\=[bcdeEfFgGnoxX%]\=\)\=\)\=}" contained containedin=pythonString,pythonUniString,pythonRawString,pythonUniRawString
 endif
 
 if exists("python_highlight_string_templates") && python_highlight_string_templates != 0
   " String templates
-  syn match pythonStrTemplate	"\$\(\$\|{[a-zA-Z_][a-zA-Z0-9_]*}\|[a-zA-Z_][a-zA-Z0-9_]*\)" contained containedin=pythonString,pythonUniString,pythonRawString,pythonUniRawString
+  syn match pythonStrTemplate	"\$\$" contained containedin=pythonString,pythonUniString,pythonRawString,pythonUniRawString
+  syn match pythonStrTemplate	"\${[a-zA-Z_][a-zA-Z0-9_]*}" contained containedin=pythonString,pythonUniString,pythonRawString,pythonUniRawString
+  syn match pythonStrTemplate	"\$[a-zA-Z_][a-zA-Z0-9_]*" contained containedin=pythonString,pythonUniString,pythonRawString,pythonUniRawString
 endif
 
 if exists("python_highlight_doctests") && python_highlight_doctests != 0
@@ -208,20 +211,20 @@ if exists("python_highlight_doctests") && python_highlight_doctests != 0
 endif
 
 " Numbers (ints, longs, floats, complex)
-syn match   pythonHexError	"\<0[xX]\x*[g-zG-Z]\x*[lL]\=\>" display
+syn match   pythonHexError	"\<0[xX]\x*[g-zG-Z]\x*\>" display
 
-syn match   pythonHexNumber	"\<0[xX]\x\+[lL]\=\>" display
-syn match   pythonOctNumber "\<0[oO]\o\+[lL]\=\>" display
-syn match   pythonBinNumber "\<0[bB][01]\+[lL]\=\>" display
+syn match   pythonHexNumber	"\<0[xX]\x\+\>" display
+syn match   pythonOctNumber "\<0[oO]\o\+\>" display
+syn match   pythonBinNumber "\<0[bB][01]\+\>" display
 
-syn match   pythonNumber	"\<\d\+[lLjJ]\=\>" display
+syn match   pythonNumber	"\<\d\+[jJ]\=\>" display
 
 syn match   pythonFloat		"\.\d\+\([eE][+-]\=\d\+\)\=[jJ]\=\>" display
 syn match   pythonFloat		"\<\d\+[eE][+-]\=\d\+[jJ]\=\>" display
 syn match   pythonFloat		"\<\d\+\.\d*\([eE][+-]\=\d\+\)\=[jJ]\=" display
 
-syn match   pythonOctError	"\<0[oO]\=\o*[8-9]\d*[lL]\=\>" display
-syn match   pythonBinError	"\<0[bB][01]*[2-9]\d*[lL]\=\>" display
+syn match   pythonOctError	"\<0[oO]\=\o*[8-9]\d*\>" display
+syn match   pythonBinError	"\<0[bB][01]*[2-9]\d*\>" display
 
 if exists("python_highlight_builtins") && python_highlight_builtins != 0
   " Builtin functions, types and objects
@@ -264,7 +267,7 @@ if exists("python_highlight_exceptions") && python_highlight_exceptions != 0
   syn keyword pythonExClass	SystemError SystemExit TypeError
   syn keyword pythonExClass	UnboundLocalError UnicodeError
   syn keyword pythonExClass	UnicodeEncodeError UnicodeDecodeError
-  syn keyword pythonExClass	UnicodeTranslateError ValueError
+  syn keyword pythonExClass	UnicodeTranslateError ValueError VMSError
   syn keyword pythonExClass	WindowsError ZeroDivisionError
 
   syn keyword pythonExClass	Warning UserWarning BytesWarning DeprecationWarning
