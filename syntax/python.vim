@@ -113,6 +113,7 @@ if exists("python_highlight_all") && python_highlight_all != 0
 endif
 
 " Keywords
+syn match pythonStatement "[:!=+\-*\\\/^|&]" display
 syn keyword pythonStatement	break continue del
 syn keyword pythonStatement	exec return
 syn keyword pythonStatement	pass raise
